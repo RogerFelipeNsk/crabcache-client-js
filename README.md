@@ -1,7 +1,7 @@
 # 🦀 CrabCache Client para Node.js
 
 <div align="center">
-  <img src="assets/logo.png" alt="CrabCache Logo" width="400" height="200">
+  <img src="assets/logo.png" alt="CrabCache Logo" width="512" height="288">
 </div>
 
 Cliente oficial Node.js para [CrabCache](https://github.com/RogerFelipeNsk/crabcache) - Sistema de cache moderno escrito em Rust com foco em performance e confiabilidade.
