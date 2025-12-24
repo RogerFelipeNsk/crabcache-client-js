@@ -1,0 +1,57 @@
+{
+  "name": "crabcache-client",
+  "version": "0.0.1",
+  "description": "Cliente Node.js oficial para CrabCache - Sistema de cache moderno em Rust",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "eslint src/**/*.ts",
+    "lint:fix": "eslint src/**/*.ts --fix",
+    "prepublishOnly": "npm run build",
+    "example:basic": "node examples/basic.js",
+    "example:pipeline": "node examples/pipeline.js",
+    "example:advanced": "node examples/advanced.js"
+  },
+  "keywords": [
+    "cache",
+    "crabcache",
+    "redis",
+    "memory",
+    "performance",
+    "rust",
+    "client",
+    "database"
+  ],
+  "author": "Roger Felipe <rogerfelipensk@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RogerFelipeNsk/crabcache-client-js.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RogerFelipeNsk/crabcache-client-js/issues"
+  },
+  "homepage": "https://github.com/RogerFelipeNsk/crabcache-client-js#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "files": [
+    "lib/**/*",
+    "README.md",
+    "LICENSE"
+  ]
+}
