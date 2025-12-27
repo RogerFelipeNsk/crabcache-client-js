@@ -206,6 +206,7 @@ export class CrabCacheConnection extends EventEmitter {
 
   private extractTextResponse(): Buffer | null {
     const crlfIndex = this.responseBuffer.indexOf('\r\n');
+    
     if (crlfIndex === -1) {
       return null; // Resposta incompleta
     }
@@ -219,7 +220,6 @@ export class CrabCacheConnection extends EventEmitter {
     if (this.responseBuffer.length === 0) return null;
 
     const responseType = this.responseBuffer[0];
-    let cursor = 1;
 
     try {
       switch (responseType) {
@@ -233,19 +233,24 @@ export class CrabCacheConnection extends EventEmitter {
         case 0x13: // RESP_ERROR
         case 0x14: // RESP_VALUE
         case 0x15: // RESP_STATS
-          const [length, lengthBytes] = this.decodeVarint(this.responseBuffer.slice(cursor));
-          cursor += lengthBytes;
+          // CrabCache usa U32LE para length, não varint
+          if (this.responseBuffer.length < 5) {
+            return null; // Precisa de pelo menos 1 byte (type) + 4 bytes (length)
+          }
           
-          if (cursor + length > this.responseBuffer.length) {
+          const length = this.responseBuffer.readUInt32LE(1);
+          const totalLength = 1 + 4 + length; // type + length + data
+          
+          if (this.responseBuffer.length < totalLength) {
             return null; // Resposta incompleta
           }
           
-          const fullResponse = this.responseBuffer.slice(0, cursor + length);
-          this.responseBuffer = this.responseBuffer.slice(cursor + length);
+          const fullResponse = this.responseBuffer.slice(0, totalLength);
+          this.responseBuffer = this.responseBuffer.slice(totalLength);
           return fullResponse;
 
         default:
-          throw new Error(`Unknown response type: ${responseType}`);
+          throw new Error(`Unknown response type: 0x${responseType.toString(16)}`);
       }
     } catch (error) {
       // Se não conseguir decodificar, aguarda mais dados

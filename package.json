@@ -1,7 +1,7 @@
 {
   "name": "crabcache-client",
-  "version": "0.0.1",
-  "description": "Cliente Node.js oficial para CrabCache - Sistema de cache moderno em Rust",
+  "version": "0.1.0",
+  "description": "Cliente Node.js oficial para CrabCache - Sistema de cache distribuído moderno em Rust",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
@@ -13,7 +13,9 @@
     "prepublishOnly": "npm run build",
     "example:basic": "node examples/basic.js",
     "example:pipeline": "node examples/pipeline.js",
-    "example:advanced": "node examples/advanced.js"
+    "example:advanced": "node examples/advanced.js",
+    "example:cluster": "node examples/cluster.js",
+    "example:protocols": "node examples/protocols.js"
   },
   "keywords": [
     "cache",
@@ -23,7 +25,11 @@
     "performance",
     "rust",
     "client",
-    "database"
+    "database",
+    "distributed",
+    "cluster",
+    "high-performance",
+    "scaling"
   ],
   "author": "Roger Felipe <rogerfelipensk@gmail.com>",
   "license": "MIT",

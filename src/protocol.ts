@@ -32,7 +32,7 @@ export class ProtocolEncoder {
   }
 
   /**
-   * Codifica um comando no formato binário
+   * Codifica um comando no formato binário (compatível com servidor Rust)
    */
   static encodeBinaryCommand(command: string, args: (string | Buffer)[] = []): Buffer {
     const buffers: Buffer[] = [];
@@ -49,9 +49,9 @@ export class ProtocolEncoder {
         const ttl = args[2] ? parseInt(args[2].toString()) : null;
         
         buffers.push(Buffer.from([CMD_PUT]));
-        buffers.push(this.encodeVarint(key.length));
+        buffers.push(this.encodeU32LE(key.length));
         buffers.push(key);
-        buffers.push(this.encodeVarint(value.length));
+        buffers.push(this.encodeU32LE(value.length));
         buffers.push(value);
         
         if (ttl !== null) {
@@ -68,7 +68,7 @@ export class ProtocolEncoder {
         if (args.length < 1) throw new Error('GET requires key');
         const getKey = Buffer.isBuffer(args[0]) ? args[0] : Buffer.from(args[0]);
         buffers.push(Buffer.from([CMD_GET]));
-        buffers.push(this.encodeVarint(getKey.length));
+        buffers.push(this.encodeU32LE(getKey.length));
         buffers.push(getKey);
         break;
         
@@ -76,7 +76,7 @@ export class ProtocolEncoder {
         if (args.length < 1) throw new Error('DEL requires key');
         const delKey = Buffer.isBuffer(args[0]) ? args[0] : Buffer.from(args[0]);
         buffers.push(Buffer.from([CMD_DEL]));
-        buffers.push(this.encodeVarint(delKey.length));
+        buffers.push(this.encodeU32LE(delKey.length));
         buffers.push(delKey);
         break;
         
@@ -86,7 +86,7 @@ export class ProtocolEncoder {
         const expireTtl = parseInt(args[1].toString());
         
         buffers.push(Buffer.from([CMD_EXPIRE]));
-        buffers.push(this.encodeVarint(expireKey.length));
+        buffers.push(this.encodeU32LE(expireKey.length));
         buffers.push(expireKey);
         
         const expireTtlBuffer = Buffer.allocUnsafe(8);
@@ -110,19 +110,12 @@ export class ProtocolEncoder {
   }
 
   /**
-   * Codifica um número usando varint
+   * Codifica um número como u32 little-endian (compatível com servidor Rust)
    */
-  private static encodeVarint(value: number): Buffer {
-    const result: number[] = [];
-    let num = value;
-    
-    while (num >= 0x80) {
-      result.push((num & 0xFF) | 0x80);
-      num >>>= 7;
-    }
-    result.push(num & 0xFF);
-    
-    return Buffer.from(result);
+  private static encodeU32LE(value: number): Buffer {
+    const buffer = Buffer.allocUnsafe(4);
+    buffer.writeUInt32LE(value, 0);
+    return buffer;
   }
 }
 
@@ -153,7 +146,7 @@ export class ProtocolDecoder {
   }
 
   /**
-   * Decodifica uma resposta no formato binário
+   * Decodifica uma resposta no formato binário (compatível com servidor Rust)
    */
   static decodeBinaryResponse(data: Buffer): any {
     if (data.length === 0) {
@@ -174,20 +167,26 @@ export class ProtocolDecoder {
         return { type: 'null' };
         
       case RESP_ERROR:
-        const [errorLen, errorLenBytes] = this.decodeVarint(data.slice(cursor));
-        cursor += errorLenBytes;
+        if (data.length < 5) throw new Error('Invalid error response: too short');
+        const errorLen = data.readUInt32LE(cursor);
+        cursor += 4;
+        if (data.length < cursor + errorLen) throw new Error('Invalid error response: insufficient data');
         const errorMessage = data.slice(cursor, cursor + errorLen).toString();
         return { type: 'error', message: errorMessage };
         
       case RESP_VALUE:
-        const [valueLen, valueLenBytes] = this.decodeVarint(data.slice(cursor));
-        cursor += valueLenBytes;
+        if (data.length < 5) throw new Error('Invalid value response: too short');
+        const valueLen = data.readUInt32LE(cursor);
+        cursor += 4;
+        if (data.length < cursor + valueLen) throw new Error('Invalid value response: insufficient data');
         const value = data.slice(cursor, cursor + valueLen);
         return { type: 'value', data: value };
         
       case RESP_STATS:
-        const [statsLen, statsLenBytes] = this.decodeVarint(data.slice(cursor));
-        cursor += statsLenBytes;
+        if (data.length < 5) throw new Error('Invalid stats response: too short');
+        const statsLen = data.readUInt32LE(cursor);
+        cursor += 4;
+        if (data.length < cursor + statsLen) throw new Error('Invalid stats response: insufficient data');
         const statsStr = data.slice(cursor, cursor + statsLen).toString();
         try {
           const statsData = JSON.parse(statsStr);
@@ -201,30 +200,4 @@ export class ProtocolDecoder {
     }
   }
 
-  /**
-   * Decodifica um varint
-   */
-  private static decodeVarint(data: Buffer): [number, number] {
-    let result = 0;
-    let shift = 0;
-    let bytesRead = 0;
-    
-    for (let i = 0; i < data.length; i++) {
-      const byte = data[i];
-      bytesRead++;
-      
-      result |= (byte & 0x7F) << shift;
-      
-      if ((byte & 0x80) === 0) {
-        break;
-      }
-      
-      shift += 7;
-      if (shift >= 32) {
-        throw new Error('Varint too long');
-      }
-    }
-    
-    return [result, bytesRead];
-  }
 }

@@ -12,6 +12,11 @@ export { ConnectionPool } from './pool';
 export { CrabCacheConnection } from './connection';
 export { ProtocolEncoder, ProtocolDecoder } from './protocol';
 
+// Export new protocol modules
+export { ToonProtocol } from './protocols/toon';
+export { ProtobufProtocol } from './protocols/protobuf';
+export { ProtocolManager, ProtocolType } from './protocols/manager';
+
 export * from './types';
 
 // Export default para compatibilidade

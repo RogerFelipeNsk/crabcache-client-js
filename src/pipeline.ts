@@ -99,6 +99,19 @@ export class CrabCachePipeline {
       return [];
     }
 
+    // Se connection é na verdade um pool, precisamos adquirir uma conexão
+    let actualConnection: any;
+    let shouldRelease = false;
+    
+    if (typeof (this.connection as any).acquire === 'function') {
+      // É um pool
+      actualConnection = await (this.connection as any).acquire();
+      shouldRelease = true;
+    } else {
+      // É uma conexão direta
+      actualConnection = this.connection;
+    }
+
     try {
       // Codificar todos os comandos
       const encodedCommands = this.commands.map(cmd => {
@@ -110,7 +123,7 @@ export class CrabCachePipeline {
       });
 
       // Enviar todos os comandos de uma vez
-      const responses = await this.connection.sendPipelineCommands(encodedCommands);
+      const responses = await actualConnection.sendPipelineCommands(encodedCommands);
 
       // Decodificar todas as respostas
       const results: PipelineResponse[] = [];
@@ -138,6 +151,11 @@ export class CrabCachePipeline {
       // Limpar comandos mesmo em caso de erro
       this.clear();
       throw error;
+    } finally {
+      // Liberar conexão se foi adquirida do pool
+      if (shouldRelease && typeof (this.connection as any).release === 'function') {
+        (this.connection as any).release(actualConnection);
+      }
     }
   }
 
