@@ -38,13 +38,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/RogerFelipe/CrabCache.git",
-    "directory": "crabcache-client-js"
+    "url": "https://github.com/RogerFelipeNsk/crabcache-client-js.git"
   },
   "bugs": {
-    "url": "https://github.com/RogerFelipe/CrabCache/issues"
+    "url": "https://github.com/RogerFelipeNsk/crabcache-client-js/issues"
   },
-  "homepage": "https://github.com/RogerFelipe/CrabCache/tree/main/crabcache-client-js#readme",
+  "homepage": "https://github.com/RogerFelipeNsk/crabcache-client-js#readme",
   "dependencies": {},
   "devDependencies": {
     "@types/node": "^20.0.0",
