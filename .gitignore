@@ -4,8 +4,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Build outputs
-lib/
+# Build outputs (keep lib/ for npm publishing)
+# lib/  # Commented out - needed for npm package
 dist/
 build/
 
@@ -52,4 +52,5 @@ Thumbs.db
 # Testing
 .nyc_output
 
+# Keep .npmrc for local development but ignore for git
 .npmrc
