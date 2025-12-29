@@ -118,7 +118,7 @@ export class ToonProtocol {
         buffers.push(Buffer.from([TOON_COMMANDS.PING]));
         break;
         
-      case 'PUT':
+      case 'PUT': {
         if (args.length < 2) throw new Error('PUT requires key and value');
         buffers.push(Buffer.from([TOON_COMMANDS.PUT]));
         
@@ -141,8 +141,9 @@ export class ToonProtocol {
           buffers.push(Buffer.from([0])); // No TTL
         }
         break;
+      }
         
-      case 'GET':
+      case 'GET': {
         if (args.length < 1) throw new Error('GET requires key');
         buffers.push(Buffer.from([TOON_COMMANDS.GET]));
         
@@ -150,8 +151,9 @@ export class ToonProtocol {
         buffers.push(this.encodeCompactLength(getKey.length));
         buffers.push(getKey);
         break;
+      }
         
-      case 'DEL':
+      case 'DEL': {
         if (args.length < 1) throw new Error('DEL requires key');
         buffers.push(Buffer.from([TOON_COMMANDS.DEL]));
         
@@ -159,8 +161,9 @@ export class ToonProtocol {
         buffers.push(this.encodeCompactLength(delKey.length));
         buffers.push(delKey);
         break;
+      }
         
-      case 'EXPIRE':
+      case 'EXPIRE': {
         if (args.length < 2) throw new Error('EXPIRE requires key and ttl');
         buffers.push(Buffer.from([TOON_COMMANDS.EXPIRE]));
         
@@ -171,14 +174,17 @@ export class ToonProtocol {
         const ttl = parseInt(args[1].toString());
         buffers.push(this.encodeCompactNumber(ttl));
         break;
+      }
         
-      case 'STATS':
+      case 'STATS': {
         buffers.push(Buffer.from([TOON_COMMANDS.STATS]));
         break;
+      }
         
-      case 'METRICS':
+      case 'METRICS': {
         buffers.push(Buffer.from([TOON_COMMANDS.METRICS]));
         break;
+      }
         
       default:
         throw new Error(`Unknown TOON command: ${command}`);
@@ -210,28 +216,33 @@ export class ToonProtocol {
     cursor++;
     
     switch (responseType) {
-      case TOON_RESPONSES.OK:
+      case TOON_RESPONSES.OK: {
         return { type: 'ok' };
+      }
         
-      case TOON_RESPONSES.PONG:
+      case TOON_RESPONSES.PONG: {
         return { type: 'pong' };
+      }
         
-      case TOON_RESPONSES.NULL:
+      case TOON_RESPONSES.NULL: {
         return { type: 'null' };
+      }
         
-      case TOON_RESPONSES.ERROR:
+      case TOON_RESPONSES.ERROR: {
         const [errorLen, errorLenBytes] = this.decodeCompactLength(data.subarray(cursor));
         cursor += errorLenBytes;
         const errorMessage = data.subarray(cursor, cursor + errorLen).toString();
         return { type: 'error', message: errorMessage };
+      }
         
-      case TOON_RESPONSES.VALUE:
+      case TOON_RESPONSES.VALUE: {
         const [valueLen, valueLenBytes] = this.decodeCompactLength(data.subarray(cursor));
         cursor += valueLenBytes;
         const value = data.subarray(cursor, cursor + valueLen);
         return { type: 'value', data: value };
+      }
         
-      case TOON_RESPONSES.STATS:
+      case TOON_RESPONSES.STATS: {
         const [statsLen, statsLenBytes] = this.decodeCompactLength(data.subarray(cursor));
         cursor += statsLenBytes;
         const statsStr = data.subarray(cursor, cursor + statsLen).toString();
@@ -241,6 +252,7 @@ export class ToonProtocol {
         } catch {
           return { type: 'stats', data: statsStr };
         }
+      }
         
       default:
         throw new Error(`Unknown TOON response type: ${responseType}`);

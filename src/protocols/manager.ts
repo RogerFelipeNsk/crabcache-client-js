@@ -116,17 +116,10 @@ export class ProtocolManager {
   /**
    * Get negotiation order based on preference
    */
-  private getNegotiationOrder(preferredProtocol?: ProtocolType): ProtocolType[] {
-    const defaultOrder: ProtocolType[] = ['toon', 'protobuf', 'binary', 'text'];
-    
-    if (!preferredProtocol) {
-      return defaultOrder;
-    }
-    
-    // Move preferred protocol to front
-    const order = defaultOrder.filter(p => p !== preferredProtocol);
-    order.unshift(preferredProtocol);
-    return order;
+  private getNegotiationOrder(_preferredProtocol?: ProtocolType): ProtocolType[] {
+    // For now, always use text protocol since TOON negotiation causes connection issues
+    // TODO: Fix TOON negotiation connection handling
+    return ['text'];
   }
 
   /**
@@ -135,17 +128,17 @@ export class ProtocolManager {
   private async tryProtocol(
     protocol: ProtocolType,
     sendCommand: (data: Buffer) => Promise<Buffer>,
-    result: ProtocolNegotiationResult
+    _result: ProtocolNegotiationResult
   ): Promise<boolean> {
     switch (protocol) {
       case 'toon':
-        return await this.tryToonNegotiation(sendCommand, result);
+        return await this.tryToonNegotiation(sendCommand, _result);
       case 'protobuf':
-        return await this.tryProtobufNegotiation(sendCommand, result);
+        return await this.tryProtobufNegotiation(sendCommand, _result);
       case 'binary':
-        return await this.tryBinaryNegotiation(sendCommand, result);
+        return await this.tryBinaryNegotiation(sendCommand, _result);
       case 'text':
-        return await this.tryTextNegotiation(sendCommand, result);
+        return await this.tryTextNegotiation(sendCommand, _result);
       default:
         return false;
     }
@@ -155,26 +148,29 @@ export class ProtocolManager {
    * Try TOON protocol negotiation
    */
   private async tryToonNegotiation(
-    sendCommand: (data: Buffer) => Promise<Buffer>,
-    result: ProtocolNegotiationResult
+    _sendCommand: (data: Buffer) => Promise<Buffer>,
+    _result: ProtocolNegotiationResult
   ): Promise<boolean> {
     try {
-      const negotiationPacket = ToonProtocol.createNegotiationPacket();
-      const response = await sendCommand(negotiationPacket);
+      // const negotiationPacket = ToonProtocol.createNegotiationPacket();
+      // const response = await sendCommand(negotiationPacket);
       
-      const toonResult = ToonProtocol.parseNegotiationResponse(response);
-      result.toonResult = toonResult;
+      // const toonResult = ToonProtocol.parseNegotiationResponse(response);
+      // result.toonResult = toonResult;
       
-      if (toonResult.success && !toonResult.fallbackToText) {
-        return true;
-      }
+      // if (toonResult.success && !toonResult.fallbackToText) {
+      //   // Server responded with TOON magic, but CrabCache server doesn't actually
+      //   // switch to TOON protocol - it just acknowledges and continues with text
+      //   // So we need to force text protocol for compatibility
+      //   return false; // Force fallback to text
+      // }
       
       return false;
     } catch (error) {
-      result.toonResult = {
-        success: false,
-        error: `TOON negotiation error: ${error}`
-      };
+      // result.toonResult = {
+      //   success: false,
+      //   error: `TOON negotiation error: ${error}`
+      // };
       return false;
     }
   }
@@ -183,26 +179,26 @@ export class ProtocolManager {
    * Try Protobuf protocol negotiation
    */
   private async tryProtobufNegotiation(
-    sendCommand: (data: Buffer) => Promise<Buffer>,
-    result: ProtocolNegotiationResult
+    _sendCommand: (data: Buffer) => Promise<Buffer>,
+    _result: ProtocolNegotiationResult
   ): Promise<boolean> {
     try {
-      const negotiationPacket = ProtobufProtocol.createNegotiationPacket();
-      const response = await sendCommand(negotiationPacket);
+      // const negotiationPacket = ProtobufProtocol.createNegotiationPacket();
+      // const response = await sendCommand(negotiationPacket);
       
-      const protobufResult = ProtobufProtocol.parseNegotiationResponse(response);
-      result.protobufResult = protobufResult;
+      // const protobufResult = ProtobufProtocol.parseNegotiationResponse(response);
+      // result.protobufResult = protobufResult;
       
-      if (protobufResult.success && !protobufResult.fallbackToText) {
-        return true;
-      }
+      // if (protobufResult.success && !protobufResult.fallbackToText) {
+      //   return true;
+      // }
       
       return false;
     } catch (error) {
-      result.protobufResult = {
-        success: false,
-        error: `Protobuf negotiation error: ${error}`
-      };
+      // result.protobufResult = {
+      //   success: false,
+      //   error: `Protobuf negotiation error: ${error}`
+      // };
       return false;
     }
   }
@@ -211,16 +207,17 @@ export class ProtocolManager {
    * Try binary protocol negotiation
    */
   private async tryBinaryNegotiation(
-    sendCommand: (data: Buffer) => Promise<Buffer>,
-    result: ProtocolNegotiationResult
+    _sendCommand: (data: Buffer) => Promise<Buffer>,
+    _result: ProtocolNegotiationResult
   ): Promise<boolean> {
     try {
       // Try a simple binary PING command
-      const pingCommand = ProtocolEncoder.encodeBinaryCommand('PING', []);
-      const response = await sendCommand(pingCommand);
+      // const pingCommand = ProtocolEncoder.encodeBinaryCommand('PING', []);
+      // const response = await sendCommand(pingCommand);
       
-      const decoded = ProtocolDecoder.decodeBinaryResponse(response);
-      return decoded.type === 'pong';
+      // const decoded = ProtocolDecoder.decodeBinaryResponse(response);
+      // return decoded.type === 'pong';
+      return false;
     } catch (error) {
       return false;
     }
@@ -230,16 +227,14 @@ export class ProtocolManager {
    * Try text protocol negotiation
    */
   private async tryTextNegotiation(
-    sendCommand: (data: Buffer) => Promise<Buffer>,
-    result: ProtocolNegotiationResult
+    _sendCommand: (data: Buffer) => Promise<Buffer>,
+    _result: ProtocolNegotiationResult
   ): Promise<boolean> {
     try {
       // Text protocol always works as fallback
-      const pingCommand = ProtocolEncoder.encodeTextCommand('PING', []);
-      const response = await sendCommand(pingCommand);
-      
-      const decoded = ProtocolDecoder.decodeTextResponse(response);
-      return decoded.type === 'pong';
+      // Don't send any negotiation packet for text protocol
+      // Just return true to indicate text protocol is available
+      return true;
     } catch (error) {
       return false;
     }

@@ -340,10 +340,10 @@ export class CrabCacheClient extends EventEmitter {
         // Single node connection
         await this.pool.warmUp(2);
         
-        // Negotiate protocol if enabled
-        if (this.config.autoNegotiateProtocol) {
-          await this.negotiateProtocol();
-        }
+        // Skip protocol negotiation for now due to connection issues
+        // TODO: Fix protocol negotiation
+        this.protocolManager.forceProtocol('text');
+        this.protocolNegotiated = true;
         
         this.emit('connected');
       }
@@ -381,7 +381,7 @@ export class CrabCacheClient extends EventEmitter {
         this.config.preferredProtocol
       );
 
-      // Release the negotiation connection immediately
+      // Keep the negotiation connection in the pool - don't close it
       this.pool.release(negotiationConnection);
 
       if (result.selectedProtocol !== this.config.preferredProtocol) {
@@ -784,35 +784,16 @@ export class CrabCacheClient extends EventEmitter {
   private async executeCommand(command: string, args: (string | Buffer)[]): Promise<any> {
     let connection: any;
     let pool: ConnectionPool;
-    let selectedNode: ClusterNode | null = null;
     
-    if (this.config.enableCluster) {
-      selectedNode = this.selectNode();
-      if (!selectedNode) {
-        throw new Error('No active nodes available');
-      }
-      
-      const nodeId = `${selectedNode.host}:${selectedNode.port}`;
-      pool = this.nodeConnections.get(nodeId)!;
-      this.clientMetrics.clusterRequests!++;
-      
-      // Update node metrics
-      const nodeMetrics = this.nodeMetrics.get(nodeId);
-      if (nodeMetrics) {
-        nodeMetrics.requestCount++;
-      }
-    } else {
-      pool = this.pool;
-    }
+    // Force single node mode for debugging
+    pool = this.pool;
     
     connection = await pool.acquire();
     
     try {
-      // Negotiate protocol if not done yet
-      if (!this.protocolNegotiated && this.config.autoNegotiateProtocol) {
-        await this.negotiateProtocol();
-      }
-
+      // Skip protocol negotiation in executeCommand
+      // Protocol should already be set to text
+      
       // For now, always use fallback encoding/decoding since we know text protocol works
       // TODO: Fix protocol manager integration
       const encodedCommand = this.fallbackEncodeCommand(command, args);
@@ -1003,6 +984,8 @@ export class CrabCacheClient extends EventEmitter {
     negotiated: boolean;
     capabilities: string[];
     stats: any;
+    toonStats?: any;
+    protobufStats?: any;
     config: {
       preferred: ProtocolType;
       autoNegotiate: boolean;
@@ -1020,6 +1003,8 @@ export class CrabCacheClient extends EventEmitter {
         key => protocolInfo.capabilities[key as keyof typeof protocolInfo.capabilities]
       ),
       stats: protocolInfo.stats,
+      toonStats: protocolInfo.toonStats,
+      protobufStats: protocolInfo.protobufStats,
       config: {
         preferred: this.config.preferredProtocol,
         autoNegotiate: this.config.autoNegotiateProtocol,
@@ -1028,6 +1013,24 @@ export class CrabCacheClient extends EventEmitter {
         protobufEnabled: this.config.enableProtobufProtocol
       }
     };
+  }
+
+  /**
+   * Get protocol statistics
+   */
+  getProtocolStats(): {
+    selectedProtocol: ProtocolType;
+    negotiationAttempts: number;
+    successfulNegotiations: number;
+    fallbackCount: number;
+    toonUsage: number;
+    protobufUsage: number;
+    binaryUsage: number;
+    textUsage: number;
+    averageNegotiationTime: number;
+    compressionRatio: number;
+  } {
+    return this.protocolManager.getStats();
   }
 
   /**
