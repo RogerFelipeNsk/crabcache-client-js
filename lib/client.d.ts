@@ -4,7 +4,7 @@
 import { EventEmitter } from 'events';
 import { CrabCachePipeline, PipelineBatch } from './pipeline';
 import { ProtocolType, ProtocolNegotiationResult } from './protocols/manager';
-import { CrabCacheConfig, CrabCacheValue, CrabCacheStats, ClusterStats, ClientMetrics, ConnectionPoolMetrics, ClusterMetrics } from './types';
+import { CrabCacheConfig, CrabCacheValue, CrabCacheStats, RawCrabCacheStats, ClusterStats, ClientMetrics, ConnectionPoolMetrics, ClusterMetrics } from './types';
 export declare class CrabCacheClient extends EventEmitter {
     private config;
     private pool;
@@ -62,7 +62,7 @@ export declare class CrabCacheClient extends EventEmitter {
     /**
      * Obtém estatísticas do servidor ou cluster
      */
-    stats(): Promise<CrabCacheStats | ClusterStats>;
+    stats(): Promise<CrabCacheStats | ClusterStats | RawCrabCacheStats>;
     private getClusterStats;
     /**
      * Obtém métricas do servidor

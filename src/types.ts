@@ -89,6 +89,10 @@ export interface CrabCacheStats {
   uptime_seconds: number;
 }
 
+export interface RawCrabCacheStats {
+  raw_stats: string;
+}
+
 export interface ClusterStats extends CrabCacheStats {
   cluster_nodes: number;
   cluster_active_nodes: number;

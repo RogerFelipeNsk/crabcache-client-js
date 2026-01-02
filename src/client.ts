@@ -11,6 +11,7 @@ import {
   CrabCacheConfig, 
   CrabCacheValue, 
   CrabCacheStats,
+  RawCrabCacheStats,
   ClusterStats,
   ClientMetrics,
   ConnectionPoolMetrics,
@@ -583,7 +584,7 @@ export class CrabCacheClient extends EventEmitter {
   /**
    * Obtém estatísticas do servidor ou cluster
    */
-  async stats(): Promise<CrabCacheStats | ClusterStats> {
+  async stats(): Promise<CrabCacheStats | ClusterStats | RawCrabCacheStats> {
     const startTime = Date.now();
     
     try {
@@ -594,9 +595,22 @@ export class CrabCacheClient extends EventEmitter {
         this.updateMetrics(startTime, true);
         
         if (response.type === 'stats') {
-          return typeof response.data === 'string' 
-            ? JSON.parse(response.data) 
-            : response.data;
+          // If it's already an object, return it
+          if (typeof response.data === 'object') {
+            return response.data;
+          }
+          
+          // If it's a string, try to parse as JSON first
+          if (typeof response.data === 'string') {
+            try {
+              return JSON.parse(response.data);
+            } catch {
+              // If JSON parsing fails, return the raw text stats
+              return { raw_stats: response.data };
+            }
+          }
+          
+          return response.data;
         } else if (response.type === 'error') {
           throw new Error(response.message);
         }
@@ -688,9 +702,22 @@ export class CrabCacheClient extends EventEmitter {
       this.updateMetrics(startTime, true);
       
       if (response.type === 'stats') {
-        return typeof response.data === 'string' 
-          ? JSON.parse(response.data) 
-          : response.data;
+        // If it's already an object, return it
+        if (typeof response.data === 'object') {
+          return response.data;
+        }
+        
+        // If it's a string, try to parse as JSON first
+        if (typeof response.data === 'string') {
+          try {
+            return JSON.parse(response.data);
+          } catch {
+            // If JSON parsing fails, return the raw metrics
+            return { raw_metrics: response.data };
+          }
+        }
+        
+        return response.data;
       } else if (response.type === 'error') {
         throw new Error(response.message);
       }

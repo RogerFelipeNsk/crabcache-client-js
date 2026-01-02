@@ -25,9 +25,22 @@ export class ProtocolEncoder {
    * Codifica um comando no formato de texto
    */
   static encodeTextCommand(command: string, args: (string | Buffer)[] = []): Buffer {
-    const parts = [command, ...args.map(arg => 
-      Buffer.isBuffer(arg) ? arg.toString() : arg
-    )];
+    const parts = [command];
+    
+    // For text protocol, we'll avoid quoting and instead encode spaces as %20
+    for (const arg of args) {
+      const argStr = Buffer.isBuffer(arg) ? arg.toString() : arg;
+      
+      // URL encode spaces and special characters to avoid parsing issues
+      const encoded = argStr
+        .replace(/ /g, '%20')
+        .replace(/\r/g, '%0D')
+        .replace(/\n/g, '%0A')
+        .replace(/"/g, '%22');
+      
+      parts.push(encoded);
+    }
+    
     return Buffer.from(parts.join(' ') + '\r\n');
   }
 
@@ -139,6 +152,34 @@ export class ProtocolDecoder {
       } catch {
         return { type: 'stats', data: response.substring(6).trim() };
       }
+    }
+    
+    // Check if this looks like stats output (contains "Stats:" or multiple lines with stats info)
+    if (response.includes('Stats:') || (response.includes('Total Entries:') && response.includes('Hit Ratio:'))) {
+      return { type: 'stats', data: response };
+    }
+    
+    // Check if this looks like metrics output (contains key=value pairs)
+    if (response.includes('=') && (response.includes('ops_total=') || response.includes('hits=') || response.includes('hit_ratio='))) {
+      return { type: 'stats', data: response };
+    }
+    if (response.startsWith('VALUE ')) {
+      // Extract the actual value from "VALUE <data>"
+      let valueData = response.substring(6).trim();
+      
+      // Remove surrounding quotes if present
+      if (valueData.startsWith("'") && valueData.endsWith("'")) {
+        valueData = valueData.slice(1, -1);
+      }
+      
+      // URL decode the value
+      const decoded = valueData
+        .replace(/%20/g, ' ')
+        .replace(/%0D/g, '\r')
+        .replace(/%0A/g, '\n')
+        .replace(/%22/g, '"');
+      
+      return { type: 'value', data: decoded };
     }
     
     // Assume que é um valor
